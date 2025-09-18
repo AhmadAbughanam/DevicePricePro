@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>DevicePricePro - Find the Best Tech Deals</title>
+    <meta name="description"
+        content="Compare prices for smartphones, laptops, tablets and electronics. Find the best deals and save money on your next tech purchase." />
+    <meta name="theme-color" content="#3b82f6" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loading-logo {
+            font-size: 3rem;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 2rem;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 500;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            animation: fadeInOut 2s ease-in-out infinite;
+        }
+
+        @keyframes fadeInOut {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin-top: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #fff, #f0f0f0, #fff);
+            border-radius: 2px;
+            animation: progressLoad 3s ease-in-out infinite;
+            transform-origin: left;
+        }
+
+        @keyframes progressLoad {
+            0% {
+                transform: scaleX(0);
+            }
+
+            50% {
+                transform: scaleX(0.7);
+            }
+
+            100% {
+                transform: scaleX(1);
+            }
+        }
+
+        /* Hide loading when React loads */
+        body.loaded .loading-screen {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Error Screen */
+        .error-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9998;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .error-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .error-message {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 500px;
+        }
+
+        .retry-button {
+            background: white;
+            color: #ff6b6b;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* No Script Styling */
+        .noscript-container {
+            background: linear-gradient(135deg, #ffa726 0%, #ff7043 100%);
+            color: white;
+            padding: 3rem;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .noscript-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+
+        .noscript-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .noscript-message {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .noscript-steps {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .noscript-steps h3 {
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .noscript-steps ol {
+            padding-left: 1.5rem;
+        }
+
+        .noscript-steps li {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .loading-logo {
+                font-size: 2rem;
+            }
+
+            .loading-text {
+                font-size: 1rem;
+            }
+
+            .progress-container {
+                width: 250px;
+            }
+
+            .error-title,
+            .noscript-title {
+                font-size: 2rem;
+            }
+
+            .error-message,
+            .noscript-message {
+                font-size: 1rem;
+            }
+
+            .error-icon,
+            .noscript-icon {
+                font-size: 3rem;
+            }
+        }
+
+        /* App Container Styling */
+        #root {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+        }
+
+        body.loaded #root {
+            opacity: 1;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation"></div>
+
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Enhanced No Script -->
+    <noscript>
+        <div class="noscript-container">
+            <div class="noscript-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h1 class="noscript-title">JavaScript Required</h1>
+            <p class="noscript-message">
+                DevicePricePro needs JavaScript to show you the best device prices and deals.
+                Please enable JavaScript to continue.
+            </p>
+            <div class="noscript-steps">
+                <h3>How to enable JavaScript:</h3>
+                <ol>
+                    <li>Click on your browser settings</li>
+                    <li>Find "Privacy & Security" or "Site Settings"</li>
+                    <li>Look for "JavaScript" option</li>
+                    <li>Enable JavaScript</li>
+                    <li>Refresh this page</li>
+                </ol>
+            </div>
+        </div>
+    </noscript>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-logo">
+            <i class="fas fa-mobile-alt"></i> DevicePricePro
+        </div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Loading amazing deals...</div>
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div class="error-screen" id="errorScreen">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <h1 class="error-title">Oops! Something went wrong</h1>
+        <p class="error-message">
+            Don't worry, it's not your fault. We're having some technical difficulties.
+            Please try refreshing the page or come back in a few minutes.
+        </p>
+        <button class="retry-button" onclick="window.location.reload()">
+            <i class="fas fa-redo"></i> Try Again
+        </button>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="root"></div>
+
+    <!-- Enhanced JavaScript -->
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Loading messages
+        const loadingMessages = [
+            'Loading amazing deals...',
+            'Finding the best prices...',
+            'Comparing thousands of products...',
+            'Almost ready...',
+            'Preparing your experience...'
+        ];
+
+        let messageIndex = 0;
+        function updateLoadingMessage() {
+            const loadingText = document.getElementById('loadingText');
+            if (loadingText) {
+                loadingText.textContent = loadingMessages[messageIndex];
+                messageIndex = (messageIndex + 1) % loadingMessages.length;
+            }
+        }
+
+        // Error handling
+        let errorCount = 0;
+        window.addEventListener('error', function (e) {
+            errorCount++;
+            console.error('Application error:', e.error);
+
+            if (errorCount > 2) {
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('errorScreen').style.display = 'flex';
+            }
+        });
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', function () {
+            createParticles();
+
+            // Update loading messages
+            const messageInterval = setInterval(updateLoadingMessage, 2000);
+
+            // Hide loading screen after React loads
+            setTimeout(function () {
+                document.body.classList.add('loaded');
+                clearInterval(messageInterval);
+
+                // Clean up particles after loading for better performance
+                setTimeout(() => {
+                    const particles = document.getElementById('particles');
+                    if (particles && particles.children.length > 20) {
+                        while (particles.children.length > 20) {
+                            particles.removeChild(particles.lastChild);
+                        }
+                    }
+                }, 2000);
+            }, 3000);
+        });
+
+        // Prevent right-click context menu for better UX (optional)
+        // document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Add smooth scroll behavior
+        document.documentElement.style.scrollBehavior = 'smooth';
+    </script>
+</body>
+
+</html>

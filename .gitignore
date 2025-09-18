@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.joblib
+.venv/
+env/
+venv/
+*.egg-info/
+instance/
+config.yaml
+
+# Jupyter/Colab
+.ipynb_checkpoints/
+*.ipynb_save
+*.ipynb_save.*
+
+# Node / React
+node_modules/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp/
+.pnp.js
+coverage/
+
+# Docker
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

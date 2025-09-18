@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devicepricepro-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DATABASE_URL=sqlite:///app.db
+      - JWT_SECRET_KEY=devicepricepro-jwt-secret-key-change-in-production-2024
+      - ML_MODEL_PATH=/app/models-ai/lgb_pipeline.pkl
+      - SECRET_KEY=devicepricepro-flask-secret-key-change-in-production-2024
+    volumes:
+      - ./backend:/app                  # source code
+      - ./backend/models-ai:/app/models-ai  # ML models
+      - ./backend/models:/app/models        # Python modules like user.py
+      - ./backend/db:/app/db            # database
+      - ./backend/logs:/app/logs        # logs
+    networks:
+      - devicepricepro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devicepricepro-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - REACT_APP_ENVIRONMENT=development
+    depends_on:
+      - backend
+    networks:
+      - devicepricepro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  devicepricepro-network:
+    driver: bridge

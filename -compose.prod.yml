@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  # Backend service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devicepricepro-backend-prod
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - DATABASE_URL=sqlite:///app.db
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - ML_MODEL_PATH=/app/models/model.joblib
+      - LOG_LEVEL=INFO
+    volumes:
+      - backend-models:/app/models
+      - backend-database:/app/database
+      - backend-logs:/app/logs
+    networks:
+      - devicepricepro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command:
+      [
+        "gunicorn",
+        "--bind",
+        "0.0.0.0:5000",
+        "--workers",
+        "4",
+        "--timeout",
+        "120",
+        "app:app",
+      ]
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devicepricepro-frontend-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - REACT_APP_ENVIRONMENT=production
+    depends_on:
+      - backend
+    networks:
+      - devicepricepro-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  devicepricepro-network:
+    driver: bridge
+
+volumes:
+  backend-models:
+    driver: local
+  backend-database:
+    driver: local
+  backend-logs:
+    driver: local
