@@ -2,19 +2,18 @@
 
 > **AI-powered device price prediction platform with explainable ML insights**
 
-DevicePricePro is a full-stack web application that predicts device prices using machine learning. Built with Flask (backend) and React (frontend), it provides both single device predictions and batch processing capabilities with SHAP explainability features.
-
-![DevicePricePro Demo](docs/images/demo.gif)
+DevicePricePro is a full-stack web application that predicts device prices using machine learning. Built with Flask (backend) and React (frontend), it provides both single device predictions and batch processing capabilities with comprehensive analytics and user management.
 
 ## 🚀 Features
 
 - **Intelligent Price Prediction**: ML-powered predictions for smartphones, tablets, and other devices
 - **Batch Processing**: Upload CSV files for bulk price predictions
-- **Explainable AI**: SHAP-based feature importance visualization
+- **User Authentication**: Secure JWT-based authentication system
+- **Prediction History**: Track and analyze your prediction history
+- **Analytics Dashboard**: Comprehensive insights with charts and export capabilities
 - **Real-time API**: RESTful API with comprehensive endpoints
 - **Modern UI**: React-based responsive frontend with intuitive design
 - **Production Ready**: Docker containerization for easy deployment
-- **Comprehensive Testing**: Automated tests for backend and frontend
 
 ## 🏗️ Architecture
 
@@ -23,16 +22,17 @@ DevicePricePro is a full-stack web application that predicts device prices using
 │   React Frontend│ ◄──────────────► │  Flask Backend   │
 │                 │                  │                  │
 │ • Device Forms  │                  │ • ML Predictions │
-│ • Batch Upload  │                  │ • SHAP Analysis  │
-│ • Visualizations│                  │ • Data Processing│
+│ • Batch Upload  │                  │ • User Auth      │
+│ • Analytics     │                  │ • Data Processing│
+│ • History       │                  │ • SQLite DB      │
 └─────────────────┘                  └──────────────────┘
                                                │
                                                ▼
                                     ┌──────────────────┐
                                     │  ML Model        │
                                     │                  │
-                                    │ • Scikit-learn   │
-                                    │ • Preprocessing  │
+                                    │ • LightGBM       │
+                                    │ • Pipeline       │
                                     │ • Feature Eng.   │
                                     └──────────────────┘
 ```
@@ -40,40 +40,38 @@ DevicePricePro is a full-stack web application that predicts device prices using
 ## 🛠️ Tech Stack
 
 **Backend:**
-
 - Flask 2.x - Web framework
-- Scikit-learn - Machine learning
+- LightGBM - Machine learning model
+- SQLite - Database
+- SQLAlchemy - ORM
+- JWT - Authentication
 - Pandas - Data manipulation
-- SHAP - Model explainability
-- Joblib - Model serialization
+- Scikit-learn - Preprocessing pipeline
 
 **Frontend:**
-
 - React 18 - UI framework
-- TypeScript - Type safety
+- JavaScript/JSX - Language
 - Recharts - Data visualization
-- Axios - HTTP client
-- Tailwind CSS - Styling
+- React Router - Navigation
+- CSS - Styling
 
 **Infrastructure:**
-
 - Docker & Docker Compose
 - Python 3.9+
 - Node.js 18+
+- Nginx - Production web server
 
 ## 📦 Quick Start
 
 ### Using Docker (Recommended)
 
 1. **Clone the repository**
-
    ```bash
    git clone https://github.com/your-username/DevicePricePro.git
    cd DevicePricePro
    ```
 
 2. **Start the application**
-
    ```bash
    docker-compose up --build
    ```
@@ -85,7 +83,6 @@ DevicePricePro is a full-stack web application that predicts device prices using
 ### Manual Installation
 
 #### Backend Setup
-
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -93,106 +90,87 @@ python app.py
 ```
 
 #### Frontend Setup
-
 ```bash
 cd frontend
 npm install
 npm start
 ```
 
-## 📊 Training the ML Model
+## 🤖 ML Model
 
-The ML model is trained using Google Colab for easy access to GPUs and collaborative development.
+The application uses a LightGBM model trained on device specifications to predict prices. The model is stored as `lgb_pipeline.pkl` in the `backend/models-ai/` directory.
 
-1. **Open the training notebook**: [Train_DevicePrice_Model.ipynb](notebooks/Train_DevicePrice_Model.ipynb)
-2. **Run all cells** to train the model
-3. **Download** the generated `model.joblib` file
-4. **Place** it in `backend/models/model.joblib`
+**Model Features:**
+- Brand, model, screen size, RAM, storage
+- Operating system, camera, battery capacity
+- Device age and other specifications
 
-See [Model Training Guide](docs/model_training.md) for detailed instructions.
+**Model Location:** `backend/models-ai/lgb_pipeline.pkl`
 
 ## 🔌 API Documentation
 
 ### Base URL: `http://localhost:5000`
 
-#### Endpoints
-
-**Single Prediction**
-
+#### Authentication Endpoints
 ```http
-POST /predict
-Content-Type: application/json
-
-{
-  "brand": "Apple",
-  "model_name": "iPhone 14",
-  "screen_size": 6.1,
-  "ram_gb": 6,
-  "storage_gb": 128,
-  "operating_system": "iOS",
-  "camera_mp": 12,
-  "battery_mah": 3279,
-  "age_years": 1
-}
+POST /auth/register
+POST /auth/login
+POST /auth/logout
 ```
 
-**Batch Predictions**
-
+#### Prediction Endpoints
 ```http
+POST /predict/single
 POST /predict/batch
-Content-Type: multipart/form-data
-file: devices.csv
+GET /predict/history
 ```
 
-**SHAP Explanations**
-
+#### User Management
 ```http
-POST /predict/explain
-Content-Type: application/json
-
-{
-  "brand": "Samsung",
-  "model_name": "Galaxy S23",
-  ...
-}
-```
-
-See [API Documentation](docs/api.md) for complete endpoint details.
-
-## 🧪 Testing
-
-```bash
-# Backend tests
-cd backend
-python -m pytest tests/
-
-# Frontend tests
-cd frontend
-npm test
+GET /user/profile
+PUT /user/profile
 ```
 
 ## 📁 Project Structure
 
 ```
 DevicePricePro/
-├── backend/                 # Flask backend
-│   ├── app.py              # Main application
-│   ├── config.py           # Configuration
-│   ├── models/             # ML models
-│   ├── ml/                 # ML utilities
-│   ├── routes/             # API routes
-│   ├── services/           # Business logic
-│   ├── utils/              # Helper functions
-│   └── tests/              # Backend tests
-├── frontend/               # React frontend
+├── backend/                    # Flask backend
+│   ├── app.py                 # Main application
+│   ├── config.py              # Configuration
+│   ├── requirements.txt       # Python dependencies
+│   ├── Dockerfile            # Backend container
+│   ├── models/               # Database models
+│   │   ├── user.py          # User model
+│   │   └── device.py        # Device model
+│   ├── models-ai/           # ML models
+│   │   └── lgb_pipeline.pkl # Trained LightGBM model
+│   ├── routes/              # API routes
+│   ├── services/            # Business logic
+│   │   ├── auth_service.py  # Authentication logic
+│   │   └── device_service.py # Device prediction logic
+│   ├── utils/               # Helper functions
+│   ├── database/            # Database files
+│   └── db/                  # Database utilities
+├── frontend/                # React frontend
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── services/       # API services
-│   │   ├── utils/          # Frontend utilities
-│   │   └── types/          # TypeScript types
-│   └── public/             # Static assets
+│   │   ├── components/      # React components
+│   │   │   ├── Home.jsx            # Landing page
+│   │   │   ├── Login.jsx           # Login form
+│   │   │   ├── Register.jsx        # Registration form
+│   │   │   ├── Dashboard.js        # Main dashboard
+│   │   │   ├── SinglePrediction.jsx # Single device prediction
+│   │   │   ├── BatchPrediction.jsx  # Batch processing
+│   │   │   ├── PredictionHistory.jsx # History view
+│   │   │   ├── Analytics.jsx       # Analytics dashboard
+│   │   │   └── Profile.jsx         # User profile
+│   │   └── utils/           # Frontend utilities
+│   ├── public/              # Static assets
+│   ├── Dockerfile          # Frontend container
+│   ├── nginx.conf          # Nginx configuration
+│   └── package.json        # Dependencies
+├── colab/                  # Colab training notebooks
 ├── docs/                   # Documentation
-├── notebooks/              # Colab training notebooks
 ├── docker-compose.yml      # Development setup
 ├── docker-compose.prod.yml # Production setup
 └── README.md              # This file
@@ -201,7 +179,6 @@ DevicePricePro/
 ## 🚀 Deployment
 
 ### Production Deployment
-
 ```bash
 # Build and run production containers
 docker-compose -f docker-compose.prod.yml up --build -d
@@ -209,78 +186,75 @@ docker-compose -f docker-compose.prod.yml up --build -d
 
 ### Environment Variables
 
-Create `.env` files for configuration:
-
-**.env.backend**
-
+Create `.env` file in root directory:
 ```env
+# Backend Configuration
 FLASK_ENV=production
-ML_MODEL_PATH=/app/models/model.joblib
-DATABASE_URL=your_database_url
+SECRET_KEY=your-secret-key
+DATABASE_URL=sqlite:///database/app.db
+JWT_SECRET_KEY=your-jwt-secret
+
+# Frontend Configuration
+REACT_APP_API_URL=http://localhost:5000
 ```
 
-**.env.frontend**
+## 🎯 Key Features
 
-```env
-REACT_APP_API_URL=https://your-api-domain.com
-REACT_APP_ENVIRONMENT=production
-```
+### User Authentication
+- JWT-based secure authentication
+- User registration and login
+- Protected routes and API endpoints
 
-## 📊 Model Performance
+### Device Price Prediction
+- **Single Predictions**: Predict individual device prices
+- **Batch Processing**: Upload CSV files for bulk predictions
+- **History Tracking**: View all your previous predictions
 
-| Metric              | Value        |
-| ------------------- | ------------ |
-| Mean Absolute Error | $89.32       |
-| R² Score            | 0.874        |
-| RMSE                | $156.21      |
-| Training Time       | ~3.2 minutes |
+### Analytics Dashboard
+- Comprehensive prediction analytics
+- Visual charts and statistics
+- Export capabilities (CSV, PDF, JSON)
+- Performance metrics and trends
 
-See [Model Card](docs/model_card.md) for detailed performance metrics.
+### User Management
+- User profiles with editable information
+- Prediction history per user
+- Secure data isolation
 
-## 🤝 Contributing
+## 🧪 Application Pages
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-See [Contributing Guidelines](docs/contributing.md) for detailed information.
-
-## 📚 Documentation
-
-- [API Documentation](docs/api.md)
-- [Model Training Guide](docs/model_training.md)
-- [Model Card](docs/model_card.md)
-- [Deployment Guide](docs/deployment.md)
-- [Contributing Guidelines](docs/contributing.md)
+- **Home** - Landing page with features and pricing
+- **Login/Register** - User authentication
+- **Dashboard** - Main application hub
+- **Single Prediction** - Individual device price prediction
+- **Batch Prediction** - CSV upload for bulk processing
+- **History** - View prediction history with filters
+- **Analytics** - Comprehensive data insights
+- **Profile** - User account management
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-**Docker build fails**
+**Model not found error**
+- Ensure `lgb_pipeline.pkl` is in `backend/models-ai/`
+- Check file permissions and path
 
+**Database connection issues**
+- Check if `database/` directory exists
+- Verify SQLite permissions
+
+**Frontend can't connect to backend**
+- Ensure backend runs on port 5000
+- Check CORS settings in Flask app
+- Verify `REACT_APP_API_URL` configuration
+
+**Docker build fails**
 ```bash
-# Clean Docker cache
 docker system prune -f
 docker-compose down --volumes
 docker-compose up --build --force-recreate
 ```
-
-**Model not found error**
-
-- Ensure `model.joblib` is in `backend/models/`
-- Check file permissions
-- Verify model was trained with compatible scikit-learn version
-
-**Frontend can't connect to backend**
-
-- Check if backend is running on port 5000
-- Verify CORS settings in Flask app
-- Update `REACT_APP_API_URL` in frontend
-
-See [Troubleshooting Guide](docs/troubleshooting.md) for more solutions.
 
 ## 📄 License
 
@@ -288,10 +262,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [Scikit-learn](https://scikit-learn.org/) for machine learning capabilities
-- [SHAP](https://shap.readthedocs.io/) for model explainability
+- [LightGBM](https://lightgbm.readthedocs.io/) for machine learning capabilities
 - [React](https://reactjs.org/) for the frontend framework
 - [Flask](https://flask.palletsprojects.com/) for the backend API
+- [Recharts](https://recharts.org/) for data visualization
 
 ---
 
