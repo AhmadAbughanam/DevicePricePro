@@ -7,7 +7,11 @@
 
 ## Authentication
 
-Currently, the API is open and doesn't require authentication. Future versions will implement API key authentication.
+The API uses JWT (JSON Web Token) based authentication. Include the token in the Authorization header for protected endpoints.
+
+```
+Authorization: Bearer <your_jwt_token>
+```
 
 ## Content Types
 
@@ -18,228 +22,200 @@ Currently, the API is open and doesn't require authentication. Future versions w
 
 All API responses follow this standard format:
 
+**Success Response:**
 ```json
 {
   "success": true,
   "data": {
     // Response data here
   },
-  "message": "Operation completed successfully",
-  "timestamp": "2025-09-16T20:30:45Z",
-  "version": "1.0.0"
+  "message": "Operation completed successfully"
 }
 ```
 
-Error responses:
-
+**Error Response:**
 ```json
 {
   "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input parameters",
-    "details": ["Brand is required", "RAM must be positive"]
-  },
-  "timestamp": "2025-09-16T20:30:45Z",
-  "version": "1.0.0"
+  "error": "Error description",
+  "message": "Detailed error message"
 }
 ```
 
 ## Endpoints
 
-### 1. Health Check
+### Authentication Endpoints
 
-Check if the API is running and healthy.
+#### 1. User Registration
 
-**Endpoint:** `GET /`  
-**Description:** Basic health check
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "data": {
-    "status": "healthy",
-    "service": "DevicePricePro API",
-    "uptime": "2 hours, 15 minutes"
-  },
-  "message": "API is running smoothly"
-}
-```
-
-### 2. Detailed Health Check
-
-**Endpoint:** `GET /health`  
-**Description:** Comprehensive health status including model status
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "data": {
-    "api_status": "healthy",
-    "model_status": "loaded",
-    "model_version": "1.0.0",
-    "database_status": "connected",
-    "uptime_seconds": 8127,
-    "memory_usage_mb": 245.7,
-    "predictions_served": 1547
-  },
-  "message": "All systems operational"
-}
-```
-
-### 3. Single Device Prediction
-
-Predict the price of a single device.
-
-**Endpoint:** `POST /predict`  
+**Endpoint:** `POST /auth/register`  
+**Authentication:** Not required  
 **Content-Type:** `application/json`
 
 **Request Body:**
+```json
+{
+  "username": "john_doe",
+  "email": "john@example.com",
+  "password": "secure_password123",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+```
 
+**Response:**
+```json
+{
+  "success": true,
+  "message": "User registered successfully",
+  "user_id": 1
+}
+```
+
+#### 2. User Login
+
+**Endpoint:** `POST /auth/login`  
+**Authentication:** Not required  
+**Content-Type:** `application/json`
+
+**Request Body:**
+```json
+{
+  "email": "john@example.com",
+  "password": "secure_password123"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "user": {
+    "id": 1,
+    "username": "john_doe",
+    "email": "john@example.com",
+    "first_name": "John",
+    "last_name": "Doe"
+  }
+}
+```
+
+#### 3. User Logout
+
+**Endpoint:** `POST /auth/logout`  
+**Authentication:** Required  
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Logged out successfully"
+}
+```
+
+### Prediction Endpoints
+
+#### 4. Single Device Prediction
+
+**Endpoint:** `POST /predict/single`  
+**Authentication:** Required  
+**Content-Type:** `application/json`
+
+**Request Body:**
 ```json
 {
   "brand": "Apple",
-  "model_name": "iPhone 14 Pro",
+  "model": "iPhone 14",
   "screen_size": 6.1,
   "ram_gb": 6,
-  "storage_gb": 256,
+  "storage_gb": 128,
   "operating_system": "iOS",
-  "connectivity": "5G",
-  "storage_type": "NVMe",
-  "color": "Deep Purple",
-  "battery_mah": 3200,
   "camera_mp": 48,
-  "weight_g": 206,
-  "age_years": 1
+  "battery_mah": 3279,
+  "age_years": 1,
+  "condition": "Excellent",
+  "color": "Deep Purple",
+  "network_type": "5G"
 }
 ```
 
 **Required Fields:**
-
 - `brand` (string): Device manufacturer
 - `ram_gb` (number): RAM in gigabytes
-- `storage_gb` (number): Storage in gigabytes
-
-**Optional Fields:**
-
-- `model_name` (string): Specific model name
-- `screen_size` (number): Screen size in inches
-- `operating_system` (string): Operating system
-- `connectivity` (string): Network connectivity
-- `storage_type` (string): Storage technology
-- `color` (string): Device color
-- `battery_mah` (number): Battery capacity
-- `camera_mp` (number): Camera resolution
-- `weight_g` (number): Weight in grams
-- `age_years` (number): Years since release
+- `storage_gb` (number): Storage capacity in gigabytes
 
 **Response:**
-
 ```json
 {
   "success": true,
   "data": {
     "predicted_price": 899.45,
-    "price_range": {
-      "min": 849.32,
-      "max": 949.58
-    },
-    "confidence_score": 0.87,
-    "prediction_metadata": {
-      "model_version": "1.0.0",
-      "processing_time_ms": 45,
-      "features_used": 12,
-      "similar_devices_count": 156
+    "confidence": 0.87,
+    "price_range": "Premium",
+    "prediction_id": "pred_123456789",
+    "device_specs": {
+      "brand": "Apple",
+      "model": "iPhone 14",
+      "ram_gb": 6,
+      "storage_gb": 128
     }
   },
   "message": "Price prediction completed successfully"
 }
 ```
 
-### 4. Batch Predictions
-
-Predict prices for multiple devices at once.
+#### 5. Batch Predictions
 
 **Endpoint:** `POST /predict/batch`  
+**Authentication:** Required  
 **Content-Type:** `multipart/form-data`
 
 **Request:**
-
-- **Method 1 - CSV File Upload:**
-
-  ```
-  file: devices.csv (form-data)
-  ```
-
-- **Method 2 - JSON Array:**
-  ```json
-  {
-    "devices": [
-      {
-        "brand": "Apple",
-        "model_name": "iPhone 14",
-        "ram_gb": 6,
-        "storage_gb": 128
-        // ... other fields
-      },
-      {
-        "brand": "Samsung",
-        "model_name": "Galaxy S23",
-        "ram_gb": 8,
-        "storage_gb": 256
-        // ... other fields
-      }
-    ]
-  }
-  ```
-
-**CSV Format:**
+Upload CSV file with device specifications:
 
 ```csv
-brand,model_name,ram_gb,storage_gb,screen_size,operating_system,battery_mah,camera_mp,age_years
-Apple,iPhone 14,6,128,6.1,iOS,3279,12,1
-Samsung,Galaxy S23,8,256,6.1,Android,3900,50,0.5
-Google,Pixel 7,8,128,6.3,Android,4355,50,1
+brand,model,ram_gb,storage_gb,screen_size,operating_system,camera_mp,battery_mah,age_years,condition
+Apple,iPhone 14,6,128,6.1,iOS,48,3279,1,Excellent
+Samsung,Galaxy S23,8,256,6.1,Android,50,3900,0,New
+Google,Pixel 7,8,128,6.3,Android,50,4355,1,Good
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
   "data": {
+    "batch_id": "batch_123456789",
     "total_predictions": 3,
-    "processing_time_ms": 127,
-    "predictions": [
+    "successful_predictions": 3,
+    "failed_predictions": 0,
+    "results": [
       {
-        "device_id": 1,
-        "input": {
-          "brand": "Apple",
-          "model_name": "iPhone 14"
-        },
+        "row_id": 1,
         "predicted_price": 799.23,
-        "confidence_score": 0.89
+        "confidence": 0.89,
+        "price_range": "Premium",
+        "device": {
+          "brand": "Apple",
+          "model": "iPhone 14"
+        }
       },
       {
-        "device_id": 2,
-        "input": {
-          "brand": "Samsung",
-          "model_name": "Galaxy S23"
-        },
+        "row_id": 2,
         "predicted_price": 899.87,
-        "confidence_score": 0.91
+        "confidence": 0.91,
+        "price_range": "Premium",
+        "device": {
+          "brand": "Samsung",
+          "model": "Galaxy S23"
+        }
       }
     ],
     "summary": {
       "average_price": 849.55,
-      "price_range": {
-        "min": 799.23,
-        "max": 899.87
-      },
+      "min_price": 699.45,
+      "max_price": 899.87,
       "average_confidence": 0.9
     }
   },
@@ -247,124 +223,153 @@ Google,Pixel 7,8,128,6.3,Android,4355,50,1
 }
 ```
 
-### 5. SHAP Explanations
+#### 6. Prediction History
 
-Get feature importance explanations for predictions.
+**Endpoint:** `GET /predict/history`  
+**Authentication:** Required  
 
-**Endpoint:** `POST /predict/explain`  
+**Query Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20)
+- `type` (optional): Filter by prediction type ("single" or "batch")
+- `brand` (optional): Filter by device brand
+
+**Example:** `GET /predict/history?page=1&limit=10&brand=Apple`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "predictions": [
+      {
+        "id": 1,
+        "predicted_price": 899.45,
+        "confidence": 0.87,
+        "price_range": "Premium",
+        "prediction_type": "single",
+        "device_specs": {
+          "brand": "Apple",
+          "model": "iPhone 14",
+          "ram_gb": 6,
+          "storage_gb": 128
+        },
+        "created_at": "2024-01-15T10:30:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 45,
+      "total_pages": 5
+    }
+  },
+  "message": "Prediction history retrieved successfully"
+}
+```
+
+### User Management Endpoints
+
+#### 7. Get User Profile
+
+**Endpoint:** `GET /user/profile`  
+**Authentication:** Required  
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "username": "john_doe",
+    "email": "john@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "created_at": "2024-01-01T12:00:00Z",
+    "total_predictions": 25,
+    "last_login": "2024-01-15T10:30:00Z"
+  },
+  "message": "Profile retrieved successfully"
+}
+```
+
+#### 8. Update User Profile
+
+**Endpoint:** `PUT /user/profile`  
+**Authentication:** Required  
 **Content-Type:** `application/json`
 
 **Request Body:**
-
 ```json
 {
-  "brand": "Samsung",
-  "model_name": "Galaxy S23 Ultra",
-  "screen_size": 6.8,
-  "ram_gb": 12,
-  "storage_gb": 512,
-  "operating_system": "Android",
-  "connectivity": "5G",
-  "battery_mah": 5000,
-  "camera_mp": 200,
-  "weight_g": 234,
-  "age_years": 0.5
+  "first_name": "John",
+  "last_name": "Smith",
+  "email": "johnsmith@example.com"
 }
 ```
 
 **Response:**
-
 ```json
 {
   "success": true,
   "data": {
-    "predicted_price": 1199.67,
-    "base_price": 650.0,
-    "shap_values": [
-      {
-        "feature": "brand",
-        "value": "Samsung",
-        "impact": 180.45,
-        "description": "Premium brand increases price"
-      },
-      {
-        "feature": "ram_gb",
-        "value": 12,
-        "impact": 165.22,
-        "description": "High RAM capacity adds significant value"
-      },
-      {
-        "feature": "storage_gb",
-        "value": 512,
-        "impact": 145.8,
-        "description": "Large storage capacity increases price"
-      },
-      {
-        "feature": "camera_mp",
-        "value": 200,
-        "impact": 78.45,
-        "description": "High-resolution camera adds premium"
-      },
-      {
-        "feature": "screen_size",
-        "value": 6.8,
-        "impact": 45.3,
-        "description": "Large screen size increases cost"
-      },
-      {
-        "feature": "age_years",
-        "value": 0.5,
-        "impact": -65.55,
-        "description": "Recent device, minimal depreciation"
-      }
-    ],
-    "explanation_summary": {
-      "top_positive_factors": ["brand", "ram_gb", "storage_gb"],
-      "top_negative_factors": ["age_years"],
-      "confidence_score": 0.93
-    }
+    "id": 1,
+    "username": "john_doe",
+    "email": "johnsmith@example.com",
+    "first_name": "John",
+    "last_name": "Smith"
   },
-  "message": "SHAP explanation generated successfully"
+  "message": "Profile updated successfully"
 }
 ```
 
-### 6. Model Information
+### System Endpoints
 
-Get information about the current ML model.
+#### 9. Health Check
 
-**Endpoint:** `GET /model/info`
+**Endpoint:** `GET /health`  
+**Authentication:** Not required  
 
 **Response:**
-
 ```json
 {
   "success": true,
   "data": {
-    "model_version": "1.0.0",
-    "model_type": "Ensemble (Random Forest + Gradient Boosting + Linear)",
-    "training_date": "2025-09-01T10:30:00Z",
-    "features_count": 12,
-    "training_samples": 15847,
-    "performance_metrics": {
-      "mae": 89.32,
-      "rmse": 156.21,
-      "r2_score": 0.874,
-      "mape": 8.9
-    },
+    "status": "healthy",
+    "model_status": "loaded",
+    "database_status": "connected",
+    "uptime_seconds": 8127,
+    "version": "1.0.0"
+  },
+  "message": "API is running smoothly"
+}
+```
+
+#### 10. Model Information
+
+**Endpoint:** `GET /model/info`  
+**Authentication:** Not required  
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "model_type": "LightGBM Pipeline",
+    "model_file": "lgb_pipeline.pkl",
     "supported_features": [
       "brand",
-      "model_name",
+      "model", 
       "screen_size",
       "ram_gb",
       "storage_gb",
       "operating_system",
-      "connectivity",
-      "storage_type",
-      "color",
-      "battery_mah",
       "camera_mp",
-      "weight_g",
-      "age_years"
+      "battery_mah",
+      "age_years",
+      "condition",
+      "color",
+      "network_type"
     ],
     "supported_brands": [
       "Apple",
@@ -374,7 +379,6 @@ Get information about the current ML model.
       "Xiaomi",
       "Huawei",
       "Sony",
-      "LG",
       "Motorola"
     ]
   },
@@ -384,307 +388,326 @@ Get information about the current ML model.
 
 ## Error Codes
 
-| Code               | HTTP Status | Description                     |
-| ------------------ | ----------- | ------------------------------- |
-| `VALIDATION_ERROR` | 400         | Invalid input parameters        |
-| `MODEL_ERROR`      | 500         | ML model processing error       |
-| `FILE_ERROR`       | 400         | File upload or processing error |
-| `NOT_FOUND`        | 404         | Endpoint not found              |
-| `RATE_LIMIT`       | 429         | Too many requests               |
-| `SERVER_ERROR`     | 500         | Internal server error           |
-
-## Rate Limits
-
-- **Development**: No limits
-- **Production**: 1000 requests per hour per IP
-- **Batch Processing**: 50 requests per hour per IP
+| HTTP Status | Error Type | Description |
+|-------------|------------|-------------|
+| 400 | Bad Request | Invalid input parameters or malformed request |
+| 401 | Unauthorized | Missing or invalid JWT token |
+| 403 | Forbidden | Access denied |
+| 404 | Not Found | Endpoint or resource not found |
+| 422 | Unprocessable Entity | Validation errors |
+| 500 | Internal Server Error | Server processing error |
 
 ## Sample Requests
 
 ### cURL Examples
 
-**Single Prediction:**
-
+**User Registration:**
 ```bash
-curl -X POST http://localhost:5000/predict \
+curl -X POST http://localhost:5000/auth/register \
   -H "Content-Type: application/json" \
   -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123",
+    "first_name": "Test",
+    "last_name": "User"
+  }'
+```
+
+**User Login:**
+```bash
+curl -X POST http://localhost:5000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+
+**Single Prediction:**
+```bash
+curl -X POST http://localhost:5000/predict/single \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
     "brand": "Apple",
-    "model_name": "iPhone 14",
+    "model": "iPhone 14",
     "ram_gb": 6,
     "storage_gb": 128,
     "screen_size": 6.1,
     "operating_system": "iOS",
+    "camera_mp": 48,
     "battery_mah": 3279,
-    "camera_mp": 12,
     "age_years": 1
   }'
 ```
 
 **Batch Upload:**
-
 ```bash
 curl -X POST http://localhost:5000/predict/batch \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "file=@devices.csv"
 ```
 
-**SHAP Explanation:**
-
+**Get Prediction History:**
 ```bash
-curl -X POST http://localhost:5000/predict/explain \
-  -H "Content-Type: application/json" \
-  -d '{
-    "brand": "Samsung",
-    "ram_gb": 8,
-    "storage_gb": 256
-  }'
+curl -X GET "http://localhost:5000/predict/history?page=1&limit=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
-### JavaScript/Axios Examples
+### JavaScript Examples
 
-**Single Prediction:**
-
+**Login and Get Token:**
 ```javascript
-const axios = require("axios");
+const axios = require('axios');
 
-const deviceData = {
-  brand: "Google",
-  model_name: "Pixel 7 Pro",
-  ram_gb: 12,
-  storage_gb: 256,
-  screen_size: 6.7,
-  operating_system: "Android",
-  camera_mp: 50,
-  age_years: 1,
-};
-
-try {
-  const response = await axios.post(
-    "http://localhost:5000/predict",
-    deviceData
-  );
-  console.log("Predicted price:", response.data.data.predicted_price);
-} catch (error) {
-  console.error("Error:", error.response.data);
+async function loginUser() {
+  try {
+    const response = await axios.post('http://localhost:5000/auth/login', {
+      email: 'test@example.com',
+      password: 'password123'
+    });
+    
+    const token = response.data.token;
+    console.log('Login successful, token:', token);
+    return token;
+  } catch (error) {
+    console.error('Login failed:', error.response.data);
+  }
 }
 ```
 
-**Batch Prediction:**
-
+**Single Prediction:**
 ```javascript
-const FormData = require("form-data");
-const fs = require("fs");
+async function predictPrice(token) {
+  try {
+    const response = await axios.post(
+      'http://localhost:5000/predict/single',
+      {
+        brand: 'Apple',
+        model: 'iPhone 14 Pro',
+        ram_gb: 6,
+        storage_gb: 256,
+        screen_size: 6.1,
+        operating_system: 'iOS',
+        camera_mp: 48,
+        battery_mah: 3200,
+        age_years: 1
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log('Predicted price:', response.data.data.predicted_price);
+    return response.data;
+  } catch (error) {
+    console.error('Prediction failed:', error.response.data);
+  }
+}
+```
 
-const form = new FormData();
-form.append("file", fs.createReadStream("devices.csv"));
+**Batch Upload:**
+```javascript
+const FormData = require('form-data');
+const fs = require('fs');
 
-try {
-  const response = await axios.post(
-    "http://localhost:5000/predict/batch",
-    form,
-    {
-      headers: form.getHeaders(),
-    }
-  );
-  console.log("Batch predictions:", response.data.data.predictions);
-} catch (error) {
-  console.error("Error:", error.response.data);
+async function uploadBatch(token) {
+  const form = new FormData();
+  form.append('file', fs.createReadStream('devices.csv'));
+  
+  try {
+    const response = await axios.post(
+      'http://localhost:5000/predict/batch',
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    );
+    
+    console.log('Batch predictions:', response.data.data.results);
+    return response.data;
+  } catch (error) {
+    console.error('Batch upload failed:', error.response.data);
+  }
 }
 ```
 
 ### Python Examples
 
-**Single Prediction:**
-
+**Complete Workflow:**
 ```python
 import requests
+import json
 
-url = 'http://localhost:5000/predict'
-data = {
-    'brand': 'OnePlus',
-    'model_name': 'OnePlus 11',
-    'ram_gb': 16,
-    'storage_gb': 256,
-    'screen_size': 6.7,
-    'operating_system': 'Android',
-    'camera_mp': 50,
-    'battery_mah': 5000,
-    'age_years': 0.5
-}
+# Base URL
+BASE_URL = 'http://localhost:5000'
 
-response = requests.post(url, json=data)
-if response.status_code == 200:
-    result = response.json()
-    print(f"Predicted price: ${result['data']['predicted_price']:.2f}")
-else:
-    print(f"Error: {response.json()}")
-```
-
-**Batch Upload:**
-
-```python
-import requests
-
-url = 'http://localhost:5000/predict/batch'
-files = {'file': open('devices.csv', 'rb')}
-
-response = requests.post(url, files=files)
-if response.status_code == 200:
-    result = response.json()
-    for prediction in result['data']['predictions']:
-        device_id = prediction['device_id']
-        price = prediction['predicted_price']
-        print(f"Device {device_id}: ${price:.2f}")
-else:
-    print(f"Error: {response.json()}")
-```
-
-## Postman Collection
-
-You can import this Postman collection to test all endpoints:
-
-```json
-{
-  "info": {
-    "name": "DevicePricePro API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Health Check",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/health",
-          "host": ["{{base_url}}"],
-          "path": ["health"]
-        }
-      }
-    },
-    {
-      "name": "Single Prediction",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"brand\": \"Apple\",\n  \"model_name\": \"iPhone 14\",\n  \"ram_gb\": 6,\n  \"storage_gb\": 128,\n  \"screen_size\": 6.1,\n  \"operating_system\": \"iOS\",\n  \"battery_mah\": 3279,\n  \"camera_mp\": 12,\n  \"age_years\": 1\n}"
-        },
-        "url": {
-          "raw": "{{base_url}}/predict",
-          "host": ["{{base_url}}"],
-          "path": ["predict"]
-        }
-      }
-    },
-    {
-      "name": "Batch Prediction",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "formdata",
-          "formdata": [
-            {
-              "key": "file",
-              "type": "file",
-              "src": "devices.csv"
-            }
-          ]
-        },
-        "url": {
-          "raw": "{{base_url}}/predict/batch",
-          "host": ["{{base_url}}"],
-          "path": ["predict", "batch"]
-        }
-      }
-    },
-    {
-      "name": "SHAP Explanation",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"brand\": \"Samsung\",\n  \"model_name\": \"Galaxy S23 Ultra\",\n  \"ram_gb\": 12,\n  \"storage_gb\": 512,\n  \"screen_size\": 6.8,\n  \"operating_system\": \"Android\",\n  \"camera_mp\": 200,\n  \"battery_mah\": 5000,\n  \"age_years\": 0.5\n}"
-        },
-        "url": {
-          "raw": "{{base_url}}/predict/explain",
-          "host": ["{{base_url}}"],
-          "path": ["predict", "explain"]
-        }
-      }
+# 1. Register user
+def register_user():
+    url = f'{BASE_URL}/auth/register'
+    data = {
+        'username': 'testuser',
+        'email': 'test@example.com', 
+        'password': 'password123',
+        'first_name': 'Test',
+        'last_name': 'User'
     }
-  ],
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:5000"
+    
+    response = requests.post(url, json=data)
+    if response.status_code == 201:
+        print('User registered successfully')
+        return response.json()
+    else:
+        print(f'Registration failed: {response.json()}')
+        return None
+
+# 2. Login user
+def login_user():
+    url = f'{BASE_URL}/auth/login'
+    data = {
+        'email': 'test@example.com',
+        'password': 'password123'
     }
-  ]
-}
+    
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        token = response.json()['token']
+        print('Login successful')
+        return token
+    else:
+        print(f'Login failed: {response.json()}')
+        return None
+
+# 3. Make prediction
+def predict_device_price(token):
+    url = f'{BASE_URL}/predict/single'
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'brand': 'Samsung',
+        'model': 'Galaxy S23',
+        'ram_gb': 8,
+        'storage_gb': 256,
+        'screen_size': 6.1,
+        'operating_system': 'Android',
+        'camera_mp': 50,
+        'battery_mah': 3900,
+        'age_years': 0
+    }
+    
+    response = requests.post(url, json=data, headers=headers)
+    if response.status_code == 200:
+        result = response.json()
+        price = result['data']['predicted_price']
+        confidence = result['data']['confidence']
+        print(f'Predicted price: ${price:.2f} (confidence: {confidence:.2f})')
+        return result
+    else:
+        print(f'Prediction failed: {response.json()}')
+        return None
+
+# 4. Get prediction history
+def get_history(token):
+    url = f'{BASE_URL}/predict/history'
+    headers = {'Authorization': f'Bearer {token}'}
+    params = {'page': 1, 'limit': 10}
+    
+    response = requests.get(url, headers=headers, params=params)
+    if response.status_code == 200:
+        history = response.json()
+        print(f"Total predictions: {history['data']['pagination']['total']}")
+        return history
+    else:
+        print(f'Failed to get history: {response.json()}')
+        return None
+
+# Usage example
+if __name__ == '__main__':
+    # Register and login
+    register_user()
+    token = login_user()
+    
+    if token:
+        # Make predictions
+        predict_device_price(token)
+        
+        # Get history
+        get_history(token)
 ```
 
-## WebSocket Support (Future)
+## Database Schema
 
-Real-time price monitoring will be available via WebSocket connections:
-
-```javascript
-// Future WebSocket implementation
-const socket = io("ws://localhost:5000");
-
-socket.on("price_update", (data) => {
-  console.log("Price updated:", data);
-});
-
-socket.emit("monitor_device", {
-  brand: "Apple",
-  model_name: "iPhone 15",
-});
+### Users Table
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(80) UNIQUE NOT NULL,
+    email VARCHAR(120) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE
+);
 ```
+
+### Device Predictions Table
+```sql
+CREATE TABLE device_predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    brand VARCHAR(50) NOT NULL,
+    model VARCHAR(100),
+    predicted_price FLOAT NOT NULL,
+    confidence FLOAT,
+    prediction_type VARCHAR(20),
+    batch_id VARCHAR(100),
+    device_specs JSON,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
+```
+
+## Rate Limits
+
+- **Development**: No limits
+- **Production**: 
+  - 1000 requests per hour per user
+  - 100 batch uploads per day per user
+  - 50 registrations per hour per IP
 
 ## Changelog
 
 ### v1.0.0 (Current)
-
-- Initial API release
+- JWT authentication system
 - Single and batch predictions
-- SHAP explanations
-- Health monitoring
+- User management
+- Prediction history with filtering
+- SQLite database integration
+- LightGBM model integration
 
 ### Future Versions
-
-- **v1.1.0**: Authentication & API keys
-- **v1.2.0**: WebSocket support
-- **v1.3.0**: GraphQL endpoint
-- **v2.0.0**: Enhanced ML models
+- **v1.1.0**: Enhanced analytics endpoints
+- **v1.2.0**: Model performance metrics
+- **v1.3.0**: Advanced filtering and search
+- **v2.0.0**: Real-time predictions via WebSocket
 
 ## Support
 
-- **Documentation**: https://docs.devicepricepro.com
-- **API Status**: https://status.devicepricepro.com
-- **Issues**: https://github.com/devicepricepro/issues
-- **Email**: api-support@devicepricepro.com
-
-## Terms of Use
-
-- API is provided "as-is" without warranty
-- Rate limits apply to prevent abuse
-- Commercial usage requires separate agreement
-- Data privacy policy applies to all requests
+- **GitHub Issues**: https://github.com/yourusername/DevicePricePro/issues
+- **Email**: support@devicepricepro.com
+- **Documentation**: Full API docs available in repository
 
 ---
 
-**Last Updated**: September 16, 2025  
+**Last Updated**: December 2024  
 **API Version**: 1.0.0
