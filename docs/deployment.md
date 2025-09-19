@@ -35,6 +35,8 @@ docker-compose up --build
 # Or manually start services
 # Backend
 cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python app.py
 
@@ -45,24 +47,21 @@ npm start
 ```
 
 **Access Points:**
-
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
-- API Documentation: http://localhost:5000/docs
+- Health Check: http://localhost:5000/health
 
 ## Production Deployment
 
 ### System Requirements
 
 **Minimum:**
-
 - 2 CPU cores
 - 4GB RAM
 - 20GB storage
 - Ubuntu 20.04+ / RHEL 8+
 
 **Recommended:**
-
 - 4 CPU cores
 - 8GB RAM
 - 50GB SSD storage
@@ -100,13 +99,11 @@ sudo apt install certbot python3-certbot-nginx -y
 git clone https://github.com/your-username/DevicePricePro.git
 cd DevicePricePro
 
-# Create production environment files
-cp .env.backend.example .env.backend
-cp .env.frontend.example .env.frontend
+# Create production environment file
+cp .env.example .env
 
-# Edit environment files
-nano .env.backend
-nano .env.frontend
+# Edit environment file
+nano .env
 
 # Deploy with production compose
 docker-compose -f docker-compose.prod.yml up -d --build
@@ -177,6 +174,16 @@ server {
         proxy_read_timeout 30s;
     }
 
+    # Authentication endpoints
+    location ~ ^/(auth|user)/ {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # Static files caching
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
         expires 1y;
@@ -208,8 +215,9 @@ sudo certbot renew --dry-run
 
 ### Development Environment
 
+Your existing `docker-compose.yml`:
+
 ```yaml
-# docker-compose.yml
 version: "3.8"
 services:
   backend:
@@ -218,11 +226,13 @@ services:
       - "5000:5000"
     volumes:
       - ./backend:/app
+      - ./backend/database:/app/database
+      - ./backend/models-ai:/app/models-ai
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=1
     env_file:
-      - .env.backend
+      - .env
 
   frontend:
     build: ./frontend
@@ -233,25 +243,31 @@ services:
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
-    env_file:
-      - .env.frontend
+      - REACT_APP_API_URL=http://localhost:5000
+    depends_on:
+      - backend
 ```
 
 ### Production Environment
 
+Your `docker-compose.prod.yml`:
+
 ```yaml
-# docker-compose.prod.yml
 version: "3.8"
 services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       - FLASK_ENV=production
     env_file:
-      - .env.backend
+      - .env
+    volumes:
+      - ./backend/database:/app/database
+      - ./backend/models-ai:/app/models-ai
+      - ./backend/logs:/app/logs
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -261,14 +277,14 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
     restart: unless-stopped
-    env_file:
-      - .env.frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -279,7 +295,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./ssl:/etc/ssl
     depends_on:
       - frontend
@@ -287,32 +303,33 @@ services:
     restart: unless-stopped
 ```
 
-### Multi-Stage Production Dockerfiles
+### Production Dockerfiles
 
-**Backend Dockerfile.prod:**
+**Backend Dockerfile (Production):**
 
 ```dockerfile
-# Build stage
-FROM python:3.9-slim as builder
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-# Production stage
 FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app
 
-WORKDIR /app
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy dependencies from builder
-COPY --from=builder /root/.local /home/app/.local
-ENV PATH=/home/app/.local/bin:$PATH
-
-# Copy application
+# Copy application code
 COPY . .
+
+# Create necessary directories
+RUN mkdir -p database logs models-ai
 
 # Set ownership
 RUN chown -R app:app /app
@@ -320,13 +337,13 @@ USER app
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5000/health')"
+    CMD curl -f http://localhost:5000/health || exit 1
 
 EXPOSE 5000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "app:app"]
+CMD ["python", "app.py"]
 ```
 
-**Frontend Dockerfile.prod:**
+**Frontend Dockerfile (Production):**
 
 ```dockerfile
 # Build stage
@@ -348,12 +365,43 @@ COPY --from=builder /app/build /usr/share/nginx/html
 # Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Create nginx user
+RUN addgroup -g 101 -S nginx
+RUN adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Frontend nginx.conf:**
+
+```nginx
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Handle React Router
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location /static/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Security headers
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+}
 ```
 
 ## Cloud Deployment
@@ -374,62 +422,10 @@ aws ecr get-login-password --region us-west-2 | docker login --username AWS --pa
 docker build -t devicepricepro-backend ./backend
 docker tag devicepricepro-backend:latest <account-id>.dkr.ecr.us-west-2.amazonaws.com/devicepricepro-backend:latest
 docker push <account-id>.dkr.ecr.us-west-2.amazonaws.com/devicepricepro-backend:latest
-```
 
-#### 2. ECS Task Definition
-
-```json
-{
-  "family": "devicepricepro",
-  "networkMode": "awsvpc",
-  "requiresCompatibilities": ["FARGATE"],
-  "cpu": "1024",
-  "memory": "2048",
-  "executionRoleArn": "arn:aws:iam::account:role/ecsTaskExecutionRole",
-  "taskRoleArn": "arn:aws:iam::account:role/ecsTaskRole",
-  "containerDefinitions": [
-    {
-      "name": "backend",
-      "image": "<account-id>.dkr.ecr.us-west-2.amazonaws.com/devicepricepro-backend:latest",
-      "portMappings": [
-        {
-          "containerPort": 5000,
-          "protocol": "tcp"
-        }
-      ],
-      "environment": [
-        {
-          "name": "FLASK_ENV",
-          "value": "production"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/devicepricepro",
-          "awslogs-region": "us-west-2",
-          "awslogs-stream-prefix": "ecs"
-        }
-      }
-    },
-    {
-      "name": "frontend",
-      "image": "<account-id>.dkr.ecr.us-west-2.amazonaws.com/devicepricepro-frontend:latest",
-      "portMappings": [
-        {
-          "containerPort": 80,
-          "protocol": "tcp"
-        }
-      ],
-      "environment": [
-        {
-          "name": "REACT_APP_API_URL",
-          "value": "https://api.yourdomain.com"
-        }
-      ]
-    }
-  ]
-}
+docker build -t devicepricepro-frontend ./frontend
+docker tag devicepricepro-frontend:latest <account-id>.dkr.ecr.us-west-2.amazonaws.com/devicepricepro-frontend:latest
+docker push <account-id>.dkr.ecr.us-west-2.amazonaws.com/devicepricepro-frontend:latest
 ```
 
 ### Google Cloud Platform (Cloud Run)
@@ -444,7 +440,9 @@ gcloud run deploy devicepricepro-backend \
     --image gcr.io/PROJECT-ID/devicepricepro-backend \
     --platform managed \
     --region us-central1 \
-    --allow-unauthenticated
+    --allow-unauthenticated \
+    --memory 2Gi \
+    --cpu 2
 
 gcloud run deploy devicepricepro-frontend \
     --image gcr.io/PROJECT-ID/devicepricepro-frontend \
@@ -456,100 +454,105 @@ gcloud run deploy devicepricepro-frontend \
 ### Heroku Deployment
 
 ```bash
-# Install Heroku CLI
+# Install Heroku CLI and login
+heroku login
+
 # Create apps
 heroku create devicepricepro-backend
 heroku create devicepricepro-frontend
 
 # Backend deployment
 cd backend
-heroku container:push web --app devicepricepro-backend
-heroku container:release web --app devicepricepro-backend
+git init
+heroku git:remote -a devicepricepro-backend
+
+# Create Procfile
+echo "web: python app.py" > Procfile
+
+# Deploy
+git add .
+git commit -m "Deploy backend"
+git push heroku main
 
 # Frontend deployment
 cd ../frontend
-heroku container:push web --app devicepricepro-frontend
-heroku container:release web --app devicepricepro-frontend
+git init
+heroku git:remote -a devicepricepro-frontend
+
+# Create static.json for SPA routing
+echo '{"root": "build/", "routes": {"/**": "index.html"}}' > static.json
+
+# Add buildpack
+heroku buildpacks:set mars/create-react-app
+
+# Deploy
+git add .
+git commit -m "Deploy frontend"
+git push heroku main
 ```
 
 ## Environment Configuration
 
-### Backend Environment (.env.backend)
+### Environment Variables (.env)
 
 ```env
 # Flask Configuration
 FLASK_ENV=production
-FLASK_DEBUG=0
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=your-super-secret-key-here
+JWT_SECRET_KEY=your-jwt-secret-key-here
+
+# Database Configuration
+DATABASE_URL=sqlite:///database/app.db
 
 # Model Configuration
-ML_MODEL_PATH=/app/models/model.joblib
-MODEL_VERSION=1.0.0
+MODEL_PATH=models-ai/lgb_pipeline.pkl
 
-# Database Configuration (if using)
-DATABASE_URL=postgresql://user:password@localhost/devicepricepro
+# CORS Settings
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
 
 # Logging
 LOG_LEVEL=INFO
-LOG_FILE=/app/logs/app.log
 
-# CORS Settings
-CORS_ORIGINS=https://yourdomain.com
+# Security
+BCRYPT_LOG_ROUNDS=12
 
-# Rate Limiting
+# Email Configuration (if needed)
+MAIL_SERVER=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USE_TLS=true
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+
+# File Upload Limits
+MAX_CONTENT_LENGTH=16777216  # 16MB
+
+# Rate Limiting (if implemented)
 RATE_LIMIT_PER_HOUR=1000
-RATE_LIMIT_STORAGE_URL=redis://localhost:6379
-
-# Monitoring
-SENTRY_DSN=your-sentry-dsn
-HEALTH_CHECK_TOKEN=your-health-check-token
-
-# Email Configuration (for notifications)
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
 ```
 
-### Frontend Environment (.env.frontend)
+### Frontend Environment
 
-```env
-# API Configuration
-REACT_APP_API_URL=https://api.yourdomain.com
-REACT_APP_API_VERSION=v1
+Frontend environment is handled through `REACT_APP_API_URL` in your build process:
 
-# Environment
-REACT_APP_ENVIRONMENT=production
+```bash
+# Development
+REACT_APP_API_URL=http://localhost:5000 npm start
 
-# Analytics
-REACT_APP_GOOGLE_ANALYTICS_ID=GA_MEASUREMENT_ID
-REACT_APP_HOTJAR_ID=HOTJAR_ID
-
-# Feature Flags
-REACT_APP_ENABLE_BATCH_UPLOAD=true
-REACT_APP_ENABLE_SHAP_EXPLANATIONS=true
-REACT_APP_ENABLE_DARK_MODE=true
-
-# Error Tracking
-REACT_APP_SENTRY_DSN=your-frontend-sentry-dsn
-
-# CDN Configuration
-REACT_APP_CDN_URL=https://cdn.yourdomain.com
-
-# Social Login (future feature)
-REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
-REACT_APP_GITHUB_CLIENT_ID=your-github-client-id
+# Production
+REACT_APP_API_URL=https://api.yourdomain.com npm run build
 ```
 
 ## Monitoring & Logging
 
 ### Application Monitoring
 
+Add monitoring to your Flask app:
+
 ```python
 # backend/utils/monitoring.py
 import time
 import psutil
-from flask import request, g
+from flask import request, g, current_app
 import logging
 
 def setup_monitoring(app):
@@ -559,91 +562,105 @@ def setup_monitoring(app):
 
     @app.after_request
     def after_request(response):
-        duration = time.time() - g.start_time
-
-        # Log request details
-        logging.info(f"Request: {request.method} {request.path} - "
-                    f"Status: {response.status_code} - "
-                    f"Duration: {duration:.3f}s")
-
-        # Add performance headers
-        response.headers['X-Response-Time'] = f"{duration:.3f}s"
-        response.headers['X-Memory-Usage'] = f"{psutil.Process().memory_info().rss / 1024 / 1024:.1f}MB"
+        if hasattr(g, 'start_time'):
+            duration = time.time() - g.start_time
+            
+            # Log request details
+            current_app.logger.info(
+                f"Request: {request.method} {request.path} - "
+                f"Status: {response.status_code} - "
+                f"Duration: {duration:.3f}s"
+            )
 
         return response
+
+    return app
 ```
 
 ### Health Check Endpoint
 
+Enhance your health check:
+
 ```python
 # backend/routes/health.py
-from flask import Blueprint, jsonify
+from flask import jsonify
 import time
-import psutil
+import os
 from datetime import datetime
 
-health_bp = Blueprint('health', __name__)
-
-@health_bp.route('/health')
+@app.route('/health')
 def health_check():
+    """Comprehensive health check endpoint."""
     start_time = time.time()
-
-    # Check model status
-    model_status = "loaded" if predictor.model else "error"
-
-    # System metrics
-    memory = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
-
+    
     health_data = {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "uptime": time.time() - app_start_time,
-        "model_status": model_status,
-        "system": {
-            "memory_usage_percent": memory.percent,
-            "disk_usage_percent": disk.percent,
-            "cpu_count": psutil.cpu_count()
-        },
-        "response_time": time.time() - start_time
+        "service": "DevicePricePro API",
+        "version": "1.0.0"
     }
-
-    return jsonify(health_data), 200
+    
+    try:
+        # Check model file exists
+        model_path = os.getenv('MODEL_PATH', 'models-ai/lgb_pipeline.pkl')
+        if os.path.exists(model_path):
+            health_data["model_status"] = "loaded"
+        else:
+            health_data["model_status"] = "missing"
+            health_data["status"] = "degraded"
+        
+        # Check database
+        if os.path.exists('database/app.db'):
+            health_data["database_status"] = "connected"
+        else:
+            health_data["database_status"] = "missing"
+            health_data["status"] = "degraded"
+            
+    except Exception as e:
+        health_data["status"] = "error"
+        health_data["error"] = str(e)
+    
+    health_data["response_time"] = time.time() - start_time
+    
+    status_code = 200 if health_data["status"] == "healthy" else 503
+    return jsonify(health_data), status_code
 ```
 
 ### Logging Configuration
 
 ```python
-# backend/config/logging.py
+# backend/config.py
 import logging
-import logging.handlers
 import os
 
-def setup_logging():
-    log_level = os.getenv('LOG_LEVEL', 'INFO')
-    log_file = os.getenv('LOG_FILE', 'logs/app.log')
-
-    # Create logs directory
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
-
-    # Configure logging
-    logging.basicConfig(
-        level=getattr(logging, log_level),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            # Console handler
-            logging.StreamHandler(),
-            # File handler with rotation
-            logging.handlers.RotatingFileHandler(
-                log_file, maxBytes=10*1024*1024, backupCount=5
-            )
-        ]
-    )
+class Config:
+    # ... other config
+    
+    @staticmethod
+    def init_app(app):
+        # Configure logging
+        if not app.debug and not app.testing:
+            # Create logs directory
+            if not os.path.exists('logs'):
+                os.mkdir('logs')
+            
+            # File handler
+            file_handler = logging.FileHandler('logs/app.log')
+            file_handler.setFormatter(logging.Formatter(
+                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+            ))
+            file_handler.setLevel(logging.INFO)
+            app.logger.addHandler(file_handler)
+            
+            app.logger.setLevel(logging.INFO)
+            app.logger.info('DevicePricePro startup')
 ```
 
 ## Backup & Recovery
 
-### Database Backup (if using database)
+### Database Backup
+
+Since you're using SQLite, backup is straightforward:
 
 ```bash
 #!/bin/bash
@@ -651,19 +668,27 @@ def setup_logging():
 
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="/backups"
-DB_NAME="devicepricepro"
+DB_FILE="backend/database/app.db"
 
 # Create backup directory
 mkdir -p $BACKUP_DIR
 
-# Backup database
-pg_dump $DB_NAME > $BACKUP_DIR/db_backup_$DATE.sql
+# Backup SQLite database
+if [ -f "$DB_FILE" ]; then
+    cp "$DB_FILE" "$BACKUP_DIR/app_backup_$DATE.db"
+    echo "Database backed up: app_backup_$DATE.db"
+else
+    echo "Database file not found: $DB_FILE"
+fi
 
 # Backup model files
-tar -czf $BACKUP_DIR/models_backup_$DATE.tar.gz backend/models/
+if [ -d "backend/models-ai" ]; then
+    tar -czf "$BACKUP_DIR/models_backup_$DATE.tar.gz" backend/models-ai/
+    echo "Models backed up: models_backup_$DATE.tar.gz"
+fi
 
 # Keep only last 7 days of backups
-find $BACKUP_DIR -name "*.sql" -mtime +7 -delete
+find $BACKUP_DIR -name "*.db" -mtime +7 -delete
 find $BACKUP_DIR -name "*.tar.gz" -mtime +7 -delete
 
 echo "Backup completed: $DATE"
@@ -678,106 +703,190 @@ crontab -e
 # Daily backup at 2 AM
 0 2 * * * /path/to/backup.sh
 
-# Weekly full backup
-0 3 * * 0 /path/to/full_backup.sh
+# Weekly backup notification
+0 3 * * 0 echo "Weekly backup completed" | mail -s "DevicePricePro Backup" admin@yourdomain.com
 ```
 
 ## Security Considerations
 
-### HTTPS/TLS Configuration
-
-```nginx
-# Strong SSL configuration
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
-ssl_prefer_server_ciphers off;
-
-# Security headers
-add_header Strict-Transport-Security "max-age=63072000" always;
-add_header X-Frame-Options DENY;
-add_header X-Content-Type-Options nosniff;
-add_header X-XSS-Protection "1; mode=block";
-add_header Referrer-Policy "strict-origin-when-cross-origin";
-```
-
 ### API Security
 
 ```python
-# Rate limiting
+# backend/utils/security.py
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from functools import wraps
+import jwt
+from flask import request, jsonify, current_app
 
+# Rate limiting
 limiter = Limiter(
-    app,
     key_func=get_remote_address,
     default_limits=["1000 per hour"]
 )
 
-@app.route('/predict')
-@limiter.limit("100 per hour")
-def predict():
-    # Prediction logic
-    pass
+# JWT token verification
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        
+        if not token:
+            return jsonify({'error': 'Token is missing'}), 401
+        
+        try:
+            if token.startswith('Bearer '):
+                token = token[7:]
+            jwt.decode(token, current_app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Token is invalid'}), 401
+        
+        return f(*args, **kwargs)
+    return decorated
+```
+
+### Input Validation
+
+```python
+# backend/utils/validation.py
+def validate_device_input(data):
+    """Validate device prediction input."""
+    required_fields = ['brand', 'ram_gb', 'storage_gb']
+    
+    for field in required_fields:
+        if field not in data:
+            return False, f"Missing required field: {field}"
+    
+    # Validate numeric fields
+    numeric_fields = ['ram_gb', 'storage_gb', 'screen_size', 'camera_mp', 'battery_mah']
+    for field in numeric_fields:
+        if field in data:
+            try:
+                value = float(data[field])
+                if value < 0:
+                    return False, f"Field {field} must be positive"
+            except (ValueError, TypeError):
+                return False, f"Field {field} must be a number"
+    
+    # Validate string fields
+    if len(data['brand'].strip()) == 0:
+        return False, "Brand cannot be empty"
+    
+    return True, None
 ```
 
 ### Docker Security
 
 ```dockerfile
-# Use non-root user
-RUN useradd --create-home --shell /bin/bash app
+# Use specific version tags
+FROM python:3.9.17-slim
+
+# Create non-root user
+RUN groupadd -r app && useradd -r -g app app
+
+# Set proper permissions
+COPY --chown=app:app . /app
 USER app
 
-# Security scanning
-RUN apk add --no-cache ca-certificates && update-ca-certificates
-
-# Remove unnecessary packages
-RUN apt-get autoremove -y && apt-get clean
+# Health check with timeout
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Container fails to start**
+1. **Model Loading Errors**
 
    ```bash
-   docker logs container_name
-   docker-compose logs service_name
+   # Check if model file exists
+   ls -la backend/models-ai/lgb_pipeline.pkl
+   
+   # Test model loading
+   cd backend
+   python -c "import joblib; model = joblib.load('models-ai/lgb_pipeline.pkl'); print('Model loaded successfully')"
    ```
 
-2. **Memory issues**
+2. **Database Issues**
 
    ```bash
-   # Increase Docker memory limits
-   docker run --memory=4g your_image
+   # Check database file
+   ls -la backend/database/app.db
+   
+   # Check database permissions
+   sqlite3 backend/database/app.db ".tables"
    ```
 
-3. **Model loading errors**
+3. **Container Networking**
 
    ```bash
-   # Check model file exists and permissions
-   ls -la backend/models/
+   # Test backend from frontend container
+   docker exec frontend-container curl http://backend:5000/health
+   
+   # Check container logs
+   docker-compose logs backend
+   docker-compose logs frontend
    ```
 
-4. **Network connectivity**
+4. **Authentication Issues**
+
    ```bash
-   # Test container networking
-   docker exec -it container_name ping backend
+   # Test JWT token generation
+   python -c "
+   import jwt
+   token = jwt.encode({'user_id': 1}, 'your-secret-key', algorithm='HS256')
+   print(token)
+   "
    ```
 
 ### Performance Optimization
 
 ```python
-# Use Gunicorn for production
-gunicorn --bind 0.0.0.0:5000 --workers 4 --worker-class gevent app:app
+# Use connection pooling for database
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 
-# Enable caching
-from flask_caching import Cache
-cache = Cache(app, config={'CACHE_TYPE': 'redis'})
+engine = create_engine(
+    'sqlite:///database/app.db',
+    poolclass=StaticPool,
+    connect_args={
+        'check_same_thread': False,
+        'timeout': 30
+    }
+)
+
+# Optimize model predictions
+import numpy as np
+
+def batch_predict_optimized(model, data_list):
+    """Optimized batch prediction."""
+    if len(data_list) == 1:
+        return [model.predict([data_list[0]])[0]]
+    
+    # Batch processing for multiple items
+    features_array = np.array([extract_features(item) for item in data_list])
+    predictions = model.predict(features_array)
+    return predictions.tolist()
 ```
+
+### Deployment Checklist
+
+- [ ] Environment variables configured
+- [ ] SSL certificates installed
+- [ ] Database initialized
+- [ ] Model file present and loadable
+- [ ] Health checks passing
+- [ ] Logs configured and rotating
+- [ ] Backups scheduled
+- [ ] Security headers configured
+- [ ] Rate limiting enabled
+- [ ] Monitoring alerts set up
 
 ---
 
-**Deployment Status**: Ready for Production  
-**Last Updated**: September 16, 2025  
-**Next Review**: December 2025
+**Deployment Status**: Production Ready  
+**Last Updated**: December 2024  
+**Next Review**: March 2025
