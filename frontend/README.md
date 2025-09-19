@@ -1,80 +1,71 @@
 # DevicePricePro Frontend 📱💰
 
-> A modern, responsive React application for predicting device prices using machine learning. Get accurate price estimates for smartphones, tablets, and other electronic devices.
-
-![DevicePricePro Banner](https://via.placeholder.com/800x200/667eea/ffffff?text=DevicePricePro+-+AI+Device+Price+Predictions)
+> A modern React application for predicting device prices using machine learning. Get accurate price estimates for smartphones, tablets, and other electronic devices with comprehensive analytics and user management.
 
 ## ✨ Features
 
 ### 🔮 **Core Functionality**
 
 - **Single Device Prediction** - Input device specifications for instant price estimates
-- **Batch CSV Upload** - Upload CSV files for bulk price predictions
-- **Prediction History** - Track and manage all your previous predictions
-- **Analytics Dashboard** - Comprehensive insights and trends visualization
+- **Batch CSV Upload** - Upload CSV files for bulk price predictions  
+- **Prediction History** - Track and manage all your previous predictions with filtering
+- **Analytics Dashboard** - Comprehensive insights, charts, and export capabilities
+- **User Authentication** - Secure JWT-based login and registration system
+- **User Profiles** - Manage account settings and personal information
 
 ### 🎨 **User Experience**
 
-- **Modern UI/UX** - Beautiful, intuitive interface with smooth animations
-- **Responsive Design** - Works perfectly on desktop, tablet, and mobile
-- **Dark/Light Theme** - Automatic theme switching based on user preference
-- **Progressive Web App** - Installable with offline capabilities
+- **Modern UI/UX** - Clean, intuitive interface with smooth interactions
+- **Responsive Design** - Works perfectly on desktop, tablet, and mobile devices
+- **Real-time Validation** - Instant form feedback and error handling
+- **Loading States** - Professional loading indicators and skeleton screens
 
 ### 🔐 **Authentication & Security**
 
-- **Multi-step Registration** - Secure account creation with validation
-- **Password Strength Indicator** - Real-time security feedback
-- **Remember Me** - Convenient login persistence
+- **Secure Registration** - Account creation with validation
+- **JWT Authentication** - Token-based secure authentication
 - **Protected Routes** - Secure access to authenticated features
+- **Auto-logout** - Session management for security
 
 ### 📊 **Advanced Features**
 
-- **Real-time Validation** - Instant form feedback and error handling
-- **File Drag & Drop** - Intuitive CSV upload with progress tracking
-- **Export Functionality** - Download prediction results as CSV
+- **File Drag & Drop** - Intuitive CSV upload interface
+- **Export Functionality** - Download results as CSV, PDF, and JSON
 - **Search & Filtering** - Find specific predictions quickly
-- **Pagination** - Efficient handling of large datasets
+- **Data Visualization** - Interactive charts using Recharts library
+- **Pagination** - Efficient handling of large prediction datasets
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js (v16.0.0 or higher)
-- npm or yarn package manager
-- DevicePricePro Backend API running
+- Node.js (v18.0.0 or higher)
+- npm package manager
+- DevicePricePro Backend API running on port 5000
 
 ### Installation
 
 1. **Clone the repository**
-
    ```bash
-   git clone https://github.com/yourusername/devicepricepro-frontend.git
-   cd devicepricepro-frontend
+   git clone https://github.com/yourusername/DevicePricePro.git
+   cd DevicePricePro/frontend
    ```
 
 2. **Install dependencies**
-
    ```bash
    npm install
-   # or
-   yarn install
    ```
 
 3. **Environment Setup**
-   Create a `.env` file in the root directory:
-
+   Create a `.env` file in the frontend directory:
    ```env
-   REACT_APP_API_BASE_URL=http://localhost:8000/api
+   REACT_APP_API_URL=http://localhost:5000
    REACT_APP_APP_NAME=DevicePricePro
-   REACT_APP_VERSION=1.0.0
    ```
 
 4. **Start the development server**
-
    ```bash
    npm start
-   # or
-   yarn start
    ```
 
 5. **Open your browser**
@@ -83,369 +74,300 @@
 ## 📁 Project Structure
 
 ```
-src/
-├── api/                    # API configuration and services
-│   └── api.js             # Axios configuration
-├── components/            # Reusable UI components
-│   ├── Navigation.jsx     # Main navigation component
-│   └── ...
-├── context/              # React Context providers
-│   └── AuthContext.js    # Authentication state management
-├── pages/                # Page components
-│   ├── Home.jsx          # Landing page
-│   ├── Login.jsx         # Authentication pages
-│   ├── Register.jsx
-│   ├── DeviceForm.jsx    # Single prediction form
-│   ├── CSVUpload.jsx     # Batch upload interface
-│   ├── DeviceHistory.jsx # Prediction history
-│   └── Analytics.jsx     # Analytics dashboard
-├── styles/               # CSS stylesheets
-│   ├── global.css        # Global styles and utilities
-│   └── components.css    # Component-specific styles
-├── utils/                # Utility functions
-│   └── ui.js            # UI helpers and utilities
-├── App.jsx              # Main application component
-└── index.jsx            # Application entry point
+frontend/
+├── public/                 # Static assets
+│   └── index.html         # HTML template
+├── src/
+│   ├── components/        # React components (pages)
+│   │   ├── Home.jsx              # Landing page with features
+│   │   ├── Login.jsx             # User authentication
+│   │   ├── Register.jsx          # User registration  
+│   │   ├── Dashboard.js          # Main dashboard hub
+│   │   ├── SinglePrediction.jsx  # Individual device prediction
+│   │   ├── BatchPrediction.jsx   # CSV upload interface
+│   │   ├── PredictionHistory.jsx # History with filtering
+│   │   ├── Analytics.jsx         # Analytics dashboard
+│   │   └── Profile.jsx           # User profile management
+│   ├── utils/             # Utility functions
+│   │   └── ui.js         # UI helpers and styles
+│   ├── App.js            # Main application component
+│   └── index.js          # Application entry point
+├── package.json          # Dependencies and scripts
+├── Dockerfile           # Container configuration
+├── nginx.conf           # Production web server config
+└── README.md            # This file
 ```
 
 ## 🛠️ Available Scripts
 
 ### Development
-
 ```bash
-npm start          # Start development server
+npm start          # Start development server (port 3000)
 npm run build      # Build for production
 npm test           # Run test suite
-npm run eject      # Eject from Create React App
 ```
 
-### Code Quality
-
+### Docker Commands
 ```bash
-npm run lint       # Run ESLint
-npm run format     # Format code with Prettier
-npm run analyze    # Analyze bundle size
+# Build container
+docker build -t devicepricepro-frontend .
+
+# Run container
+docker run -p 3000:80 devicepricepro-frontend
 ```
 
 ## 🎯 Core Components
 
-### 🏠 **Home Page**
+### 🏠 **Home Page (Home.jsx)**
+- Hero section with value proposition
+- Features showcase and benefits
+- User testimonials and social proof  
+- Pricing tiers and call-to-action buttons
+- Professional landing page design
 
-Landing page with hero section, features showcase, and call-to-action buttons.
+### 📝 **Single Prediction (SinglePrediction.jsx)**
+- Multi-step form for device specifications
+- Real-time validation and error handling
+- Price prediction with confidence scores
+- Sample data loading for testing
+- Results display with detailed breakdown
 
-### 📝 **Device Form**
+### 📄 **Batch Processing (BatchPrediction.jsx)**
+- CSV file drag-and-drop upload
+- File validation and progress tracking
+- Bulk prediction processing
+- Results table with export options
+- Error handling for invalid data
 
-Multi-step form for single device predictions:
+### 📊 **Analytics Dashboard (Analytics.jsx)**
+- Key metrics overview cards
+- Interactive charts and visualizations
+- Price distribution analysis
+- Brand and feature insights
+- Export capabilities (CSV, PDF, JSON)
 
-- **20+ device specifications** input fields
-- **Real-time validation** and error handling
-- **Progress tracking** through form steps
-- **Sample data loading** for testing
+### 📋 **Prediction History (PredictionHistory.jsx)**
+- Complete prediction tracking
+- Advanced filtering and search
+- Pagination for large datasets
+- Detailed prediction information
+- Export and management options
 
-### 📄 **CSV Upload**
+### 🔐 **Authentication Pages**
+- **Login.jsx** - Secure user login
+- **Register.jsx** - Account creation with validation
+- **Profile.jsx** - User account management
 
-Drag-and-drop interface for batch predictions:
+### 🏠 **Dashboard (Dashboard.js)**
+- Main application navigation hub
+- Quick access to all features
+- Recent activity overview
+- User-specific content
 
-- **File validation** and size limits
-- **Progress tracking** during upload
-- **Results visualization** with export options
-- **Error handling** for invalid data
-
-### 📊 **Analytics Dashboard**
-
-Comprehensive insights and visualizations:
-
-- **Key metrics** overview cards
-- **Interactive charts** and trends
-- **Feature impact** analysis
-- **Real-time activity** feed
-
-### 🔐 **Authentication**
-
-Secure user management system:
-
-- **Multi-step registration** with validation
-- **Password strength** indicator
-- **Social login** integration ready
-- **Protected routes** and role management
-
-## 🎨 Styling & Theming
+## 🎨 Styling & Design
 
 ### CSS Architecture
-
-- **CSS Variables** for consistent theming
-- **Utility Classes** for rapid development
-- **Component-scoped** styles
-- **Responsive breakpoints** for all devices
-
-### Design System
-
 ```css
-/* Color Palette */
---primary-color: #3b82f6; /* Blue */
---secondary-color: #8b5cf6; /* Purple */
---success-color: #10b981; /* Green */
---warning-color: #f59e0b; /* Amber */
---error-color: #ef4444; /* Red */
+/* Global styles and utilities in ui.js */
+const cardStyles = {
+  base: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '24px',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    border: '1px solid #e5e7eb',
+    marginBottom: '20px'
+  }
+};
 
-/* Typography */
-font-family: "Inter", sans-serif;
-/* Responsive font scaling */
-/* Modern spacing system */
+const buttonStyles = {
+  primary: { /* Primary button styles */ },
+  secondary: { /* Secondary button styles */ }
+};
 ```
 
-### Animation System
-
-- **Fade-in animations** for page loads
-- **Smooth transitions** for interactions
-- **Loading skeletons** for better UX
-- **Micro-interactions** for engagement
+### Design System
+- **Consistent color palette** with blue/purple theme
+- **Professional typography** with proper hierarchy  
+- **Responsive grid system** using CSS Grid and Flexbox
+- **Component-based styling** with reusable utilities
 
 ## 🔧 Configuration
 
-### API Configuration
+### API Integration
+The frontend communicates with the Flask backend running on port 5000:
 
 ```javascript
-// src/api/api.js
-const API_BASE_URL =
-  process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/api";
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+// API endpoints used:
+// POST /auth/login - User authentication
+// POST /auth/register - User registration  
+// POST /predict/single - Single device prediction
+// POST /predict/batch - Batch CSV processing
+// GET /predict/history - Prediction history
+// GET /user/profile - User profile data
 ```
 
 ### Environment Variables
-
 ```env
-# API Configuration
-REACT_APP_API_BASE_URL=http://localhost:8000/api
-
-# App Configuration
-REACT_APP_APP_NAME=DevicePricePro
-REACT_APP_VERSION=1.0.0
-
-# Feature Flags
-REACT_APP_ENABLE_ANALYTICS=true
-REACT_APP_ENABLE_PWA=true
+REACT_APP_API_URL=http://localhost:5000  # Backend API URL
+REACT_APP_APP_NAME=DevicePricePro        # Application name
 ```
 
 ## 📱 Responsive Design
 
 ### Breakpoints
-
-```css
-/* Mobile First Approach */
-@media (min-width: 768px) {
-  /* Tablet */
-}
-@media (min-width: 1024px) {
-  /* Desktop */
-}
-@media (min-width: 1280px) {
-  /* Large Desktop */
-}
-```
+- **Mobile**: < 768px - Stacked layouts, mobile navigation
+- **Tablet**: 768px - 1024px - Adapted grid layouts  
+- **Desktop**: > 1024px - Full feature layouts
 
 ### Features
+- Mobile-first responsive design
+- Touch-friendly interface elements
+- Optimized navigation for all screen sizes
+- Flexible component layouts
 
-- **Flexible Grid System** - CSS Grid and Flexbox
-- **Responsive Images** - Optimized loading and sizing
-- **Touch-Friendly** - Large tap targets and gestures
-- **Mobile Navigation** - Collapsible hamburger menu
+## 🚀 Performance Features
 
-## 🚀 Performance Optimizations
+### Optimization Techniques
+- Component-based architecture for reusability
+- Efficient state management with React hooks
+- Optimized bundle size with production builds
+- Fast loading with optimized assets
 
-### Code Splitting
-
-```javascript
-// Lazy loading for better performance
-const Analytics = lazy(() => import("./pages/Analytics"));
-const DeviceHistory = lazy(() => import("./pages/DeviceHistory"));
-```
-
-### Image Optimization
-
-- **Lazy loading** for images
-- **WebP format** support
-- **Responsive images** with srcset
-- **Image compression** in build process
-
-### Bundle Analysis
-
+### Production Build
 ```bash
-npm run analyze    # View bundle composition
-npm run build      # Optimized production build
+npm run build    # Creates optimized production build in /build
 ```
-
-## 🧪 Testing
-
-### Test Structure
-
-```
-src/
-├── __tests__/           # Test files
-│   ├── components/      # Component tests
-│   ├── pages/          # Page tests
-│   └── utils/          # Utility tests
-└── setupTests.js       # Test configuration
-```
-
-### Running Tests
-
-```bash
-npm test              # Run all tests
-npm test -- --watch   # Watch mode
-npm test -- --coverage # Coverage report
-```
-
-## 🔒 Security
-
-### Authentication
-
-- **JWT token** management
-- **Automatic token** refresh
-- **Secure storage** practices
-- **Route protection** middleware
-
-### Data Protection
-
-- **Input validation** on all forms
-- **XSS protection** with sanitization
-- **CSRF protection** with tokens
-- **Secure API** communication
-
-## 🌐 Browser Support
-
-| Browser | Version |
-| ------- | ------- |
-| Chrome  | 88+     |
-| Firefox | 85+     |
-| Safari  | 14+     |
-| Edge    | 88+     |
 
 ## 📦 Dependencies
 
 ### Core Dependencies
-
 ```json
 {
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
-  "react-router-dom": "^6.8.0",
-  "axios": "^1.3.0"
+  "react": "^18.x",
+  "react-dom": "^18.x", 
+  "react-router-dom": "^6.x",
+  "recharts": "^2.x"
 }
 ```
 
-### Development Dependencies
+### Key Features by Dependency
+- **React Router** - Client-side routing and navigation
+- **Recharts** - Data visualization and charts
+- **Native Fetch/Axios equivalent** - API communication
 
-```json
-{
-  "@testing-library/react": "^13.4.0",
-  "eslint": "^8.34.0",
-  "prettier": "^2.8.0"
-}
+## 🐳 Docker Support
+
+### Development
+```bash
+# Run with Docker Compose
+docker-compose up frontend
 ```
+
+### Production
+```bash
+# Build production image
+docker build -t devicepricepro-frontend .
+
+# Run with Nginx
+docker run -p 80:80 devicepricepro-frontend
+```
+
+### Nginx Configuration
+- Serves static React build files
+- API proxy to backend service
+- Optimized for production performance
+
+## 🧪 Testing
+
+### Test Structure
+```bash
+npm test                    # Run tests
+npm test -- --coverage     # Run with coverage report
+```
+
+### Testing Philosophy
+- Component functionality testing
+- User interaction testing
+- API integration testing
+- Responsive design testing
+
+## 🔒 Security
+
+### Authentication
+- JWT token storage and management
+- Automatic token refresh handling
+- Protected route middleware
+- Secure logout functionality
+
+### Data Protection  
+- Input validation on all forms
+- XSS protection with proper sanitization
+- Secure API communication
+- No sensitive data in localStorage
+
+## 🌐 Browser Support
+
+| Browser | Minimum Version |
+|---------|----------------|
+| Chrome  | 88+           |
+| Firefox | 85+           |
+| Safari  | 14+           |
+| Edge    | 88+           |
 
 ## 🚀 Deployment
 
 ### Build for Production
-
 ```bash
-npm run build
+npm run build           # Creates optimized build
 ```
 
-### Deploy to Netlify
+### Deployment Options
 
+**With Docker:**
 ```bash
-# Install Netlify CLI
-npm install -g netlify-cli
-
-# Deploy
-netlify deploy --prod --dir=build
+docker build -t frontend .
+docker run -p 80:80 frontend
 ```
 
-### Deploy to Vercel
-
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel --prod
-```
-
-### Environment-specific Builds
-
-```bash
-# Staging
-npm run build:staging
-
-# Production
-npm run build:production
-```
+**Static Hosting:**
+- Upload `/build` folder to any static host
+- Configure environment variables
+- Set up routing for SPA
 
 ## 🤝 Contributing
 
 ### Development Workflow
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)  
+3. Make your changes
+4. Test thoroughly
+5. Commit changes (`git commit -m 'Add amazing feature'`)
+6. Push to branch (`git push origin feature/amazing-feature`)
+7. Open Pull Request
 
 ### Code Standards
-
-- **ESLint** configuration for code quality
-- **Prettier** for consistent formatting
-- **Conventional Commits** for clear history
-- **Component documentation** with PropTypes
-
-### Pull Request Guidelines
-
-- Clear, descriptive titles
-- Detailed descriptions of changes
-- Screenshots for UI changes
-- Test coverage for new features
-- Documentation updates when needed
-
-## 📊 Performance Metrics
-
-### Lighthouse Scores
-
-- **Performance**: 95+
-- **Accessibility**: 100
-- **Best Practices**: 100
-- **SEO**: 95+
-
-### Bundle Size
-
-- **Initial Bundle**: ~150kb gzipped
-- **Vendor Bundle**: ~300kb gzipped
-- **Total Load Time**: <2s on 3G
+- Clean, readable component code
+- Proper error handling
+- Responsive design principles
+- Consistent styling patterns
 
 ## 🆘 Troubleshooting
 
 ### Common Issues
 
-#### API Connection Issues
-
+**Backend Connection Problems:**
 ```bash
-# Check API status
-curl http://localhost:8000/api/health
+# Check if backend is running
+curl http://localhost:5000/health
 
 # Verify environment variables
-echo $REACT_APP_API_BASE_URL
+echo $REACT_APP_API_URL
 ```
 
-#### Build Failures
-
+**Build Issues:**
 ```bash
-# Clear cache
+# Clear node modules and reinstall
 rm -rf node_modules package-lock.json
 npm install
 
@@ -454,60 +376,50 @@ rm -rf build
 npm run build
 ```
 
-#### Development Server Issues
-
+**Development Server Problems:**
 ```bash
-# Check port availability
+# Check if port 3000 is available
 lsof -i :3000
 
-# Kill existing process
-kill -9 $(lsof -t -i:3000)
+# Kill existing process if needed
+npx kill-port 3000
 ```
 
-## 📚 Additional Resources
+## 📊 Project Stats
 
-### Documentation
+- **Components**: 9 main page components
+- **Bundle Size**: Optimized for fast loading
+- **Performance**: Mobile-first responsive design
+- **Browser Support**: Modern browsers (ES6+)
 
-- [React Documentation](https://reactjs.org/docs)
-- [React Router](https://reactrouter.com/docs)
-- [Axios Documentation](https://axios-http.com/docs/intro)
+## 📚 Documentation
 
-### Design System
-
-- [Design Tokens](./docs/design-tokens.md)
-- [Component Library](./docs/components.md)
-- [Style Guide](./docs/style-guide.md)
+### Component Documentation
+Each component includes:
+- Clear prop interfaces
+- Usage examples  
+- Error handling patterns
+- Responsive behavior notes
 
 ### API Integration
-
-- [API Documentation](../backend/README.md)
-- [Authentication Guide](./docs/authentication.md)
-- [Error Handling](./docs/error-handling.md)
+- RESTful API communication
+- Error handling and user feedback
+- Loading states and user experience
+- Data transformation and validation
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Team
-
-- **Frontend Developer** - Your Name (@yourusername)
-- **UI/UX Designer** - Designer Name (@designer)
-- **Backend Developer** - Backend Dev (@backend-dev)
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **React Team** for the amazing framework
-- **Create React App** for the development setup
-- **All Contributors** who helped improve this project
-- **Open Source Community** for the incredible libraries
+- **React Team** for the excellent framework
+- **Recharts** for beautiful data visualization
+- **Create React App** for development tooling
+- **Open Source Community** for amazing libraries
 
 ---
 
-<div align="center">
-  <p>Made with ❤️ by the DevicePricePro Team</p>
-  <p>
-    <a href="https://devicepricepro.com">Website</a> •
-    <a href="https://github.com/yourusername/devicepricepro">GitHub</a> •
-    <a href="mailto:support@devicepricepro.com">Support</a>
-  </p>
-</div>
+**Built with ❤️ for accurate device price predictions**
+
+For questions or support, please [open an issue](https://github.com/yourusername/DevicePricePro/issues).
